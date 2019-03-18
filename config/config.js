@@ -103,8 +103,44 @@ module.exports = {
         },
         {
             key: "host",
-            name: "Hos",
+            name: "Host",
             description: "The sharepoint host to use for querying data.",
+            default: "",
+            type: "text",
+            userCanEdit: false,
+            adminOnly: true
+        },
+        {
+            key: "authHost",
+            name: "Authentication Host",
+            description: "The authentication host to use for querying data.  This should usually be allowed to default.",
+            default: "accounts.accesscontrol.windows.net",
+            type: "text",
+            userCanEdit: false,
+            adminOnly: true
+        },
+        {
+            key: "clientId",
+            name: "Client ID",
+            description: "The client ID to use for authentication.",
+            default: "",
+            type: "text",
+            userCanEdit: false,
+            adminOnly: true
+        },
+        {
+            key: "clientSecret",
+            name: "Client Secret",
+            description: "The secret to use for authentication.",
+            default: "",
+            type: "password",
+            userCanEdit: false,
+            adminOnly: true
+        },
+        {
+            key: "tenantId",
+            name: "Tenant ID",
+            description: "The tenant id to authenticate inside of.",
             default: "",
             type: "text",
             userCanEdit: false,

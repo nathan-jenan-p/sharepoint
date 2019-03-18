@@ -1,25 +1,10 @@
 let async = require('async');
 let config = require('./config/config');
 let request = require('request');
+let util = require('util');
 
 let Logger;
-let requestWithDefaults;
 let requestOptions = {};
-
-let searchData = require('./search');
-
-function handleRequestError(request) {
-    return (options, expectedStatusCode, callback) => {
-        return request(options, (err, resp, body) => {
-            if (err || resp.statusCode !== expectedStatusCode) {
-                Logger.error(`error during http request to ${options.url}`, { error: err, status: resp ? resp.statusCode : 'unknown' });
-                callback({ error: err, statusCode: resp ? resp.statusCode : 'unknown' });
-            } else {
-                callback(null, body);
-            }
-        });
-    };
-}
 
 function formatSearchResults(searchResults) {
     let fakeData = [];
@@ -36,78 +21,110 @@ function formatSearchResults(searchResults) {
     return fakeData
 }
 
-function querySharepoint(entity, options, callback) {
-    if (options.fakeData) {
-        callback(null, {
-            entity: entity,
-            data: {
-                summary: [],
-                details: formatSearchResults(searchData)
-            }
-        });
-        return;
-    }
+function getRequestOptions() {
+    return JSON.parse(JSON.stringify(requestOptions));
+}
 
-    requestWithDefaults({
-        url: `https://${options.host}/_api/search/query`,
-        method: 'GET',
-        qs: {
-            querytext: `'${entity.value}'`
+function getAuthToken(options, callback) {
+    request({
+        url: `https://${options.authHost}/${options.tenantId}/tokens/OAuth/2`,
+        formData: {
+            grant_type: 'client_credentials',
+            client_id: `${options.clientId}@${options.tenantId}`,
+            client_secret: options.clientSecret,
+            resource: `00000003-0000-0ff1-ce00-000000000000/${options.host}@${options.tenantId}`,
         },
-        // TODO figure out authentication
-        headers: {
-            'Cookie': require('./creds').cookie,
-        }
-    }, 200, (err, resp) => {
+        json: true,
+        method: 'POST'
+    }, (err, resp, body) => {
         if (err) {
             callback(err);
             return;
         }
 
-        if (resp.PrimaryQueryResult.RelevantResults.RowCount < 1) {
-            callback(null, {
-                entity: entity,
-                data: null,
-            });
+        if (resp.statusCode != 200) {
+            callback({ err: new Error('status code was not 200'), body: body });
             return;
         }
 
-        callback(null, {
-            entity: entity,
-            data: {
-                summary: [],
-                details: formatSearchResults(resp)
-            }
-        });
+        callback(null, body.access_token);
+    });
+}
+
+function querySharepoint(entity, token, options, callback) {
+    let requestOptions = getRequestOptions();
+    requestOptions.qs = {
+        querytext: `'${entity.value}'`
+    };
+    requestOptions.url = `https://${options.host}/_api/search/query`;
+    requestOptions.headers = {
+        Authorization: 'Bearer ' + token
+    };
+
+    request(requestOptions, (err, resp, body) => {
+        if (err || resp.statusCode != 200) {
+            callback(err || new Error('status code was ' + resp.statusCode));
+            return;
+        }
+
+        callback(null, body);
     });
 }
 
 function doLookup(entities, options, callback) {
-    // We have to do 1 request per query because we can only AND the query 
-    // params not OR them
-    Logger.trace('starting lookup')
+    Logger.trace('starting lookup');
+
+    Logger.trace('options are', options);
 
     let results = [];
 
-    async.each(entities, (entity, done) => {
-        querySharepoint(entity, options, (err, resp) => {
-            if (err) {
-                done(err);
-                return;
-            }
-
-            results.push(resp);
-            done();
-        });
-    }, err => {
+    getAuthToken(options, (err, token) => {
         if (err) {
-            callback(err);
+            Logger.error('get token errored', err);
+            callback({ err: err });
             return;
         }
 
-        Logger.trace('sending results to client', results);
+        // We have to do 1 request per query because we can only AND the query 
+        // params not OR them
+        async.each(entities, (entity, done) => {
+            querySharepoint(entity, token, options, (err, body) => {
+                if (err) {
+                    done(err);
+                    return;
+                }
 
-        callback(null, results);
+                if (body.PrimaryQueryResult.RelevantResults.RowCount < 1) {
+                    results.push({
+                        entity: entity,
+                        data: null
+                    });
+                    done();
+                    return;
+                }
+
+                results.push({
+                    entity: entity,
+                    data: {
+                        summary: [],
+                        details: formatSearchResults(body)
+                    }
+                });
+                done();
+            });
+        }, err => {
+            if (err) {
+                Logger.error('lookup errored', err);
+
+                // errors can sometime have circular structure and this breaks polarity
+                callback({ err: util.inspect(err) });
+                return;
+            }
+
+            Logger.trace('sending results to client', results);
+
+            callback(null, results);
+        });
     });
 }
 
@@ -139,8 +156,6 @@ function startup(logger) {
     }
 
     requestOptions.json = true;
-
-    requestWithDefaults = handleRequestError(request.defaults(requestOptions));
 }
 
 function validateStringOption(errors, options, optionName, errMessage) {
@@ -156,8 +171,10 @@ function validateStringOption(errors, options, optionName, errMessage) {
 function validateOptions(options, callback) {
     let errors = [];
 
-    // Example of how to validate a string option
-    validateStringOption(errors, options, 'host', 'You must provide a host option.');
+    validateStringOption(errors, options, 'host', 'You must provide a Host option.');
+    validateStringOption(errors, options, 'clientId', 'You must provide a Client ID option.');
+    validateStringOption(errors, options, 'clientSecret', 'You must provide a Client Secret option.');
+    validateStringOption(errors, options, 'tenantId', 'You must provide a Tenant ID option.');
 
     callback(null, errors);
 }

@@ -1,24 +1,14 @@
 {
   "main": "./integration.js",
   "name": "sharepoint",
-  "version": "1.0.0-beta",
+  "version": "3.0.0",
   "private": true,
   "license": "MIT",
   "author": "Polarity",
   "dependencies": {
-    "@pnp/common": "^1.2.7",
-    "@pnp/logging": "^1.2.7",
-    "@pnp/odata": "^1.2.7",
-    "@pnp/sp": "^1.2.7",
-    "async": "2.1.4",
+    "async": "^2.1.4",
+    "node-cache": "^4.2.0",
     "request": "^2.75"
-  },
-  "devDependencies": {
-    "chai": "~3.5",
-    "mocha": "~3.2",
-    "node-ssh": "^5.1.1",
-    "node-watch": "^0.5.8",
-    "scp2": "^0.5.0"
   },
   "scripts": {
     "test": "./node_modules/.bin/mocha --recursive",

@@ -22,7 +22,7 @@ module.exports = {
      * @type String
      * @optional
      */
-    description: "TODO sharepoint integration description",
+    description: "Polarity Sharepoint integration",
     entityTypes: ['*'],
     /**
      * An array of style files (css or less) that will be included for your integration. Any styles specified in
@@ -82,7 +82,7 @@ module.exports = {
         // the directory you specify is writable by the `polarityd:polarityd` user and group.
 
         //directoryPath: '/var/log/polarity-integrations',
-        level: 'trace',  //trace, debug, info, warn, error, fatal
+        level: 'info',  //trace, debug, info, warn, error, fatal
     },
     /**
      * Options that are displayed to the user/admin in the Polarity integration user-interface.  Should be structured
@@ -92,15 +92,6 @@ module.exports = {
      * @optional
      */
     options: [
-        {
-            key: "fakeData",
-            name: "Fake Data",
-            description: "Server fake query data from memory instead of querying your sharepoint instance.",
-            default: false,
-            type: "boolean",
-            userCanEdit: false,
-            adminOnly: true
-        },
         {
             key: "host",
             name: "Host",
@@ -145,6 +136,44 @@ module.exports = {
             type: "text",
             userCanEdit: false,
             adminOnly: true
+        },
+        {
+            key: "subsite",
+            name: "Subsite",
+            description: "Limit search to only a subsite (optional).  This field should be only the subsite name not the full path.",
+            default: "",
+            type: "text",
+            userCanEdit: false,
+            adminOnly: true
+        },
+        {
+            key: 'blacklist',
+            name: 'Blacklist Domains',
+            description: 'Comma delimited list of domains that you do not want to lookup.',
+            default: '',
+            type: 'text',
+            userCanEdit: false,
+            adminOnly: false
+        },
+        {
+            key: 'domainBlacklistRegex',
+            name: 'Domain Black List Regex',
+            description:
+                'Domains that match the given regex will not be looked up (if blank, no domains will be black listed)',
+            default: '',
+            type: 'text',
+            userCanEdit: false,
+            adminOnly: false
+        },
+        {
+            key: 'ipBlacklistRegex',
+            name: 'IP Black List Regex',
+            description:
+                'IPs that match the given regex will not be looked up (if blank, no IPs will be black listed)',
+            default: '',
+            type: 'text',
+            userCanEdit: false,
+            adminOnly: false
         }
     ]
 };

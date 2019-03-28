@@ -105,7 +105,7 @@ module.exports = {
             key: "authHost",
             name: "Authentication Host",
             description: "The authentication host to use for querying data.  This should usually be allowed to default.",
-            default: "accounts.accesscontrol.windows.net",
+            default: "https://accounts.accesscontrol.windows.net",
             type: "text",
             userCanEdit: false,
             adminOnly: true

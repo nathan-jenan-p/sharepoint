@@ -96,7 +96,7 @@ function _isEntityBlacklisted(entityObj, options) {
 }
 
 function formatSearchResults(searchResults) {
-    let fakeData = [];
+    let data = [];
 
     searchResults.PrimaryQueryResult.RelevantResults.Table.Rows.forEach(row => {
         let obj = {};
@@ -104,10 +104,10 @@ function formatSearchResults(searchResults) {
             obj[cell.Key] = cell.Value;
         });
 
-        fakeData.push(obj);
+        data.push(obj);
     });
 
-    return fakeData
+    return data
 }
 
 function getRequestOptions() {
@@ -226,11 +226,15 @@ function doLookup(entities, options, callback) {
                     return;
                 }
 
+                let details = formatSearchResults(body);
+                let tags = details
+                    .map(detail => `${detail.Title}.${detail.FileType}`);
+
                 results.push({
                     entity: entity,
                     data: {
-                        summary: [],
-                        details: formatSearchResults(body)
+                        summary: tags,
+                        details: details
                     }
                 });
                 done();
